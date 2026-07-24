@@ -330,9 +330,23 @@ class Panel:
 			self.dsc_scr_version = fdt.getprop_uint32(mode_node, 'qcom,mdss-dsc-scr-version', default=0)
 
 	@staticmethod
-	def parse(fdt: Fdt2, node: int) -> Panel:
-		name = fdt.getprop_or_none(node, 'qcom,mdss-dsi-panel-name')
-		return name and Panel(name.as_str(), fdt, node)
+	def parse(fdt: Fdt2, node: int, target_panel: str = None, list_only: bool = False):
+		name_prop = fdt.getprop_or_none(node, 'qcom,mdss-dsi-panel-name')
+		if not name_prop:
+			return None
+		name = name_prop.as_str()
+
+		node_name = fdt.get_name(node)
+		panel_id = _remove_before(_remove_prefixes(node_name, 'qcom,mdss_dsi_', 'ss_dsi_panel_', 'mot_').lower(), ',')
+
+		if list_only:
+			return name, panel_id
+
+		if target_panel is not None:
+			if target_panel != name and target_panel != panel_id:
+				return None
+
+		return Panel(name, fdt, node)
 
 	@staticmethod
 	def find(fdt: Fdt2) -> Iterator[int]:
